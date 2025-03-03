@@ -1,0 +1,186 @@
+let pl_build = document.querySelector(".pl-build");
+let pl_units = document.querySelector(".pl-units");
+let pl_attack = document.querySelector(".pl-attack");
+let pl_attack_text_wrap = document.querySelector(".pl-attack-text-wrap");
+let pl_attack_text = document.querySelector(".pl-attack-text");
+let op_build = document.querySelector(".op-build");
+let op_units = document.querySelector(".op-units");
+let op_attack = document.querySelector(".op-attack");
+let op_attack_text_wrap = document.querySelector(".op-attack-text-wrap");
+let op_attack_text = document.querySelector(".op-attack-text");
+
+const bldlist = ["Жилой район", "Колодец", "Оборонные сооружения", "Щит"];
+const bldlvls = [6, 1, -1, 2]; // Максимальные уровни; -1 - неограничено
+
+const unilist = ["Ползун, ур. 1", "Ползун, ур. 2", "Заготовка", "Летающая заготовка", "Бомбардировщик"];
+const uniconstruct = [0, 2]; // Те юниты, что можно сконструировать
+const uniupgrade = {0:1, 2:3, 3:4}; // Руководство, как улучшать юнитов
+const unifinal = [1, 4] // Те юниты, что не улучшаются больше
+const unidamage = [1, 2, 0, 0, 3]; // Урон юнитов. Не атакующие - 0
+const unihealth = [1, 2, 1, 1, 3]; // Прочность юнитов
+
+let check_turn_code = "power--;(turn?op_attack:pl_attack).style.display='none';if(power==0){update_power();water();if(canattack()&&turns>10){(turn?pl_attack:op_attack).style.display='block';}turn=!turn;turns++;}reload_text(false);"; // Вынесен для удобства: повторяется 3 раза
+
+// Основная работа происходит с этими списками: 
+let pl_build_list = {"Жилой район":1, "Колодец":0, "Оборонные сооружения":0, "Щит":0};
+let pl_units_list = {"Ползун, ур. 1":0, "Ползун, ур. 2":0, "Заготовка":0, "Летающая заготовка":0, "Бомбардировщик":0};
+let op_build_list = {"Жилой район":1, "Колодец":0, "Оборонные сооружения":0, "Щит":0};
+let op_units_list = {"Ползун, ур. 1":0, "Ползун, ур. 2":0, "Заготовка":0, "Летающая заготовка":0, "Бомбардировщик":0};
+let game = true,
+    power = 1, // Количество Энергии ходящего игрока
+    turn = true, // Чей ход: true - левого, false - правого
+    turns = 0, // Количество ходов с начала игры или с последней атаки
+    attacker = [], // Атакующие юниты
+    attacking = 0, // Индекс атакующего юнита во время Атаки
+    pl_without_water = 0, // Сколько ходов прошло без Колодца
+    op_without_water = 0;
+
+function water() {
+    if((turn?pl_build_list:op_build_list)['Колодец'] == 0){
+        (turn?pl_without_water++:op_without_water++);
+    }
+}
+
+function update_power() {
+    let temp = (turn?pl_build_list:op_build_list)["Жилой район"]
+    power = (temp<=4)?1:((temp==5)?2:((Math.random()<0.25)?3:2))
+}
+
+function reload_text(attack) {
+    pl_build.innerHTML = "";
+    pl_units.innerHTML = "";
+    op_build.innerHTML = "";
+    op_units.innerHTML = "";
+    for (let key in pl_build_list) {
+        if (pl_build_list[key] != 0) {
+            pl_build.innerHTML += `<li>${key}, ур. ${pl_build_list[key]}</li>`;
+        }
+    }
+    for (let key in pl_units_list) {
+        if (pl_units_list[key] != 0) {
+            pl_units.innerHTML += `<li>${key}, ${pl_units_list[key]} шт.</li>`;
+        }
+    }
+    if (pl_build.innerHTML == "") {
+        pl_build.innerHTML = "Ничего: победа врага!";
+        game = false;
+    }
+    if (pl_units.innerHTML == "") {
+        pl_units.innerHTML = "Пока ничего";
+    }
+    for (let key in op_build_list) {
+        if (op_build_list[key] != 0) {
+            op_build.innerHTML += `<li>${key}, ур. ${op_build_list[key]}</li>`;
+        }
+    }
+    for (let key in op_units_list) {
+        if (op_units_list[key] != 0) {
+            op_units.innerHTML += `<li>${key}, ${op_units_list[key]} шт.</li>`;
+        }
+    }
+    if (op_build.innerHTML == "") {
+        op_build.innerHTML = "Ничего: победа ваша!";
+        game = false;
+    }
+    if (op_units.innerHTML == "") {
+        op_units.innerHTML = "Пока ничего";
+    }
+    if (game) {
+        if (pl_build_list["Колодец"] != 0) pl_without_water=0;
+        if (op_build_list["Колодец"] != 0) op_without_water=0;
+        if ((turn?pl_without_water:op_without_water) == 4 && (turn?pl_build_list:op_build_list)["Колодец"] == 0) {
+            (turn?pl_build:op_build).innerHTML += `<li onclick=\"${turn?"pl":"op"}_build_list[\'Колодец\']++;`+check_turn_code+`\" class=\"clickable\">Построить \"Колодец\"</li>`;
+        } else if (power > 0 && !attack) {
+            for (let i = 0; i < bldlist.length; i++) {
+                if ((turn?pl_build_list:op_build_list)[bldlist[i]] < bldlvls[i] || bldlvls[i] == -1) {
+                    (turn?pl_build:op_build).innerHTML += `<li onclick=\"${turn?"pl":"op"}_build_list[\'${bldlist[i]}\']++;`+check_turn_code+`\" class=\"clickable\">${(turn?pl_build_list:op_build_list)[bldlist[i]]>0?"Улучшить":"Построить"} \"${bldlist[i]}\"</li>`; // крч надо делать лучше, переписывать и рефакторить, а то сложно разбираться в таком
+                }
+            }
+            (turn?pl_build:op_build).innerHTML += `Осталось ходов: ${power}`;
+            for (let i = 0; i < unilist.length; i++) {
+                if (uniconstruct.includes(i) || canupgrade(i)) {
+                    (turn?pl_units:op_units).innerHTML += `<li onclick=\"${uniconstruct.includes(i)?`${turn?"pl":"op"}_units_list[\'${unilist[i]}\']++`:`${turn?"pl":"op"}_units_list[\'${unilist[findkey(uniupgrade, i)]}\']--;${turn?"pl":"op"}_units_list[\'${unilist[i]}\']++;`};`+check_turn_code+`\" class=\"clickable\">Построить \"${unilist[i]}\"</li>`; // аналогично строке 97
+                }
+            }
+            (turn?pl_units:op_units).innerHTML += `Осталось ходов: ${power}`;
+        } else if (attack) {
+            (turn?pl_attack_text:op_attack_text).innerHTML = "";
+            for (let i = 0; i < attacker.length; i++) {
+                (turn?pl_attack_text:op_attack_text).innerHTML += `<li class=\"attack${(attacking==i||power!=-1)?" bold":""}\">${unilist[attacker[i]["id"]]}, прочность ${attacker[i]["health"]}, урон ${attacker[i]["damage"]}${(attacking==i)?" < атакует сейчас.":""}</li>`; // тут еще понятно вроде...
+            }
+            if (attacking == attacker.length || power != -1) {
+                if (power == -1) {
+                    power = (turn?pl_build_list:op_build_list)["Оборонные сооружения"];
+                }
+                if (power == 0) {
+                    for (let i = 0; i < attacker.length; i ++) {
+                        (turn?op_units_list:pl_units_list)[unilist[attacker[i]["id"]]]++;
+                    }
+                    (turn?pl_attack_text_wrap:op_attack_text_wrap).style.display = "none";
+                    turns = 5;
+                    update_power();
+                    reload_text(false);
+                } else {
+                    for (let i = 0; i < attacker.length; i++) {
+                        (turn?pl_attack_text:op_attack_text).innerHTML += `<li class=\"clickable attack\" onclick=\"power=Math.max(0, power-attacker[${i}][\'health\']);${(attacker[i]['health']<=power)?`attacker.splice(${i}, 1)`:`attacker[${i}][\'health\']-=${power}`};reload_text(true);\">Обороняться от \"${unilist[attacker[i]["id"]]}, прочность ${attacker[i]["health"]}\"</li>`; // аналогично строке 97
+                    }
+                }
+            } else {
+                if ((turn?pl_build_list:op_build_list)["Щит"] > 0) {
+                    (turn?pl_build:op_build).innerHTML += `<li class=\"clickable attack\" onclick=\"${turn?"pl":"op"}_build_list[\'Щит\']=Math.max(0, ${turn?"pl":"op"}_build_list[\'Щит\']-${attacker[attacking]["damage"]});attacking ++;reload_text(attacking<attacker.length);">Атаковать \"Щит\"</li>`;
+                } else {
+                    for (let i = 0; i < bldlist.length; i ++) {
+                        if ((turn?pl_build_list:op_build_list)[bldlist[i]] > 0) {
+                            (turn?pl_build:op_build).innerHTML += `<li class=\"clickable attack\" onclick="${turn?"pl":"op"}_build_list[\'${bldlist[i]}\']=Math.max(0, ${turn?"pl":"op"}_build_list[\'${bldlist[i]}\']-${attacker[attacking]["damage"]});attacking ++;reload_text(attacking<=attacker.length);\">Атаковать \"${bldlist[i]}\"</li>`;
+                        }
+                    }
+                    for (let i = 0; i < unilist.length; i ++) {
+                        if ((turn?pl_units_list:op_units_list)[unilist[i]] > 0) {
+                            (turn?pl_units:op_units).innerHTML += `<li class=\"clickable attack\" onclick="${turn?"pl":"op"}_units_list[\'${unilist[i]}\']=Math.max(0, ${turn?"pl":"op"}_units_list[\'${unilist[i]}\']-${attacker[attacking]["damage"]});attacking ++;reload_text(attacking<=attacker.length);\">Атаковать \"${unilist[i]}\"</li>`;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+function canupgrade(identifier) {
+    return (turn?pl_units_list:op_units_list)[unilist[findkey(uniupgrade, identifier)]] > 0;
+}
+
+function findkey(object, value) {
+    return Object.keys(object).find(key => object[key] === value);
+}
+
+reload_text(false);
+
+function canattack() {
+    for (let i = 0; i < unilist.length; i++) {
+        if ((turn?pl_units_list:op_units_list)[unilist[i]] != 0 && unidamage[i] != 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function attack() {
+    attacker = [];
+    power = -1
+    attacking = 0;
+    (turn?op_attack:pl_attack).style.display = "none";
+    (turn?pl_attack_text_wrap:op_attack_text_wrap).style.display = "block";
+    for (let i = 0; i < unilist.length; i++) {
+        if (unidamage[i] != 0) {
+            for (let j = 0; j < (turn?op_units_list:pl_units_list)[unilist[i]]; j++) {
+                attacker.push({"id":i, "health":unihealth[i], "damage":unidamage[i]});
+            }
+            (turn?op_units_list:pl_units_list)[unilist[i]] = 0;
+        }
+    }
+    reload_text(true);
+}
+
+// TODO: выйти из спаггетти-кода, разделить всё на более мелкие функции
+// TODO: сделать все более понятным (строки 97 и другие большие)
+// TODO: скорее всего, переписывать с нуля эту нечитабельную штуку
