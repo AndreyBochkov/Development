@@ -1,9 +1,26 @@
 body {
     display: flex;
+    padding-inline: 30px;
     justify-content: space-around;
     font-family: sans-serif;
     background-color: #005232;
     color: #fff;
+}
+
+.mainmenu {
+    transition: opacity 1s linear;
+}
+
+@media (max-width: 767px) {
+    body {
+        display: block;
+        width: fit-content;
+        margin-inline: auto;
+    }
+
+    .wrap-pl-lists {
+        margin-bottom: 90px;
+    }
 }
 
 h2 {

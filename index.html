@@ -7,7 +7,7 @@
     <title>Development - the game</title>
 </head>
 <body>
-    <div class="wrap-pl-lists">
+    <div class="wrap-pl-lists" style="display:none;">
         <h2 class="heading">Мои постройки</h2>
         <ul class="pl-build"></ul>
         <ul class="pl-build-choice"></ul>
@@ -15,12 +15,12 @@
         <ul class="pl-units"></ul>
         <ul class="pl-units-choice"></ul>
         <div class="pl-attack-text-wrap attack" style="display:none;">
-            <h2 class="pl-attack-text-heading">Атакующие юниты врага</h2>
+            <h2 class="heading">Атакующие юниты врага</h2>
             <ul class="pl-attack-text"></ul>
         </div>
         <button class="pl-attack btn" onclick="attack();" style="display:none;">АТАКА</button>
     </div>
-    <div class="wrap-op-lists">
+    <div class="wrap-op-lists" style="display:none;">
         <h2 class="heading">Постройки врага</h2>
         <ul class="op-build"></ul>
         <ul class="op-build-choice"></ul>
@@ -28,10 +28,15 @@
         <ul class="op-units"></ul>
         <ul class="op-units-choice"></ul>
         <div class="op-attack-text-wrap attack" style="display:none;">
-            <h2 class="op-attack-text-heading">Мои атакующие юниты</h2>
+            <h2 class="heading">Мои атакующие юниты</h2>
             <ul class="op-attack-text"></ul>
         </div>
         <button class="op-attack btn" onclick="attack();" style="display:none;">АТАКА</button>
+    </div>
+    <div class="mainmenu" style="opacity:1.0;">
+        <h2 class="heading">Развитие</h2>
+        <p class="mainmenu-text">&Tab;Рекомендую посмотреть <a href="https://github.com/AndreyBochkov/Development" class="clickable">репозиторий</a>, если получили ссылку сразу сюда.</p>
+        <button class="btn" onclick="start_game();">Начать игру</button>
     </div>
 </body>
 <script src="./app.js" type="text/javascript"></script>
