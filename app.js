@@ -23,7 +23,7 @@ const unifinal = [1, 4] // Те юниты, что не улучшаются б�
 const unidamage = [1, 2, 0, 0, 3]; // Урон юнитов. Не атакующие - 0
 const unihealth = [1, 2, 1, 1, 3]; // Прочность юнитов
 
-const check_turn_code = "power--;(turn?op_attack:pl_attack).style.display='none';if(power==0){update_power();water();if(canattack()&&turns>10){(turn?pl_attack:op_attack).style.display='block';}turn=!turn;turns++;}reload_text(true);"; // Вынесен для удобства: повторяется в коде 3 раза
+const check_turn_code = "power--;(turn?op_attack:pl_attack).style.display='none';if(power==0){water();if(canattack()&&turns>10){(turn?pl_attack:op_attack).style.display='block';}turn=!turn;turns++;update_power();}reload_text(true);"; // Вынесен для удобства: повторяется в коде 3 раза
 
 // Основная работа происходит с этими списками: 
 let pl_build_list = {"Жилой район":1, "Колодец":0, "Оборонные сооружения":0, "Щит":0};
